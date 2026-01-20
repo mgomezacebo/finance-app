@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Financial Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: contain;
+        }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .glass-nav {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .category-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+
+        .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-32">
+
+    <!-- HEADER -->
+    <header class="bg-slate-900 text-white pt-12 pb-24 px-6 rounded-b-[48px] shadow-2xl relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+        
+        <div class="max-w-md mx-auto relative z-10">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight leading-none mb-1">Financial Management</h1>
+                    <div class="flex items-center gap-2 opacity-50">
+                        <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></div>
+                        <p class="text-[9px] font-bold uppercase tracking-widest">Safe Local Storage</p>
+                    </div>
+                </div>
+                <button onclick="exportData()" class="p-2.5 bg-white/10 rounded-2xl border border-white/10 active:scale-90 transition-all">
+                    <i data-lucide="download" size="20"></i>
+                </button>
+            </div>
+            
+            <div class="text-center">
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-2">Balance Disponible</p>
+                <h2 id="mainBalance" class="text-5xl font-black tracking-tighter tabular-nums">0.00€</h2>
+                
+                <div class="flex justify-center gap-8 mt-6">
+                    <div>
+                        <p class="text-[9px] text-slate-500 uppercase font-black mb-1">Ingresos</p>
+                        <p id="totalIncome" class="text-sm font-bold text-emerald-400">0.00€</p>
+                    </div>
+                    <div class="w-px h-8 bg-white/10"></div>
+                    <div>
+                        <p class="text-[9px] text-slate-500 uppercase font-black mb-1">Gastos</p>
+                        <p id="totalExpense" class="text-sm font-bold text-rose-400">0.00€</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- QUICK ACTIONS -->
+    <div class="flex justify-center gap-3 -mt-10 px-6 max-w-md mx-auto relative z-20">
+        <button onclick="openModal('income')" class="flex-1 bg-white dark:bg-slate-900 p-5 rounded-[32px] shadow-xl flex flex-col items-center gap-2 border border-slate-100 dark:border-slate-800 active:scale-95 transition-all">
+            <div class="bg-emerald-500 text-white p-2.5 rounded-xl"><i data-lucide="plus" size="20"></i></div>
+            <span class="font-bold text-[10px] uppercase tracking-tighter text-slate-500">Añadir Ingreso</span>
+        </button>
+        <button onclick="openModal('expense')" class="flex-1 bg-white dark:bg-slate-900 p-5 rounded-[32px] shadow-xl flex flex-col items-center gap-2 border border-slate-100 dark:border-slate-800 active:scale-95 transition-all">
+            <div class="bg-rose-500 text-white p-2.5 rounded-xl"><i data-lucide="minus" size="20"></i></div>
+            <span class="font-bold text-[10px] uppercase tracking-tighter text-slate-500">Añadir Gasto</span>
+        </button>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main id="homeView" class="px-6 mt-10 space-y-8 max-w-md mx-auto">
+        <section>
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-lg">Últimos Movimientos</h3>
+                <div class="h-px flex-1 bg-slate-200 dark:bg-slate-800 ml-4 opacity-50"></div>
+            </div>
+            <div id="txContainer" class="space-y-3">
+                <!-- Transactions here -->
+            </div>
+        </section>
+    </main>
+
+    <main id="debtsView" class="px-6 mt-10 hidden max-w-md mx-auto">
+        <div id="debtsList">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-xl">Deudas</h3>
+                <button onclick="openModal('debt')" class="bg-slate-900 dark:bg-white text-white dark:text-slate-900 p-3 rounded-2xl shadow-lg active:scale-90 transition-all">
+                    <i data-lucide="plus" size="20"></i>
+                </button>
+            </div>
+            <div id="debtsContainer" class="space-y-3"></div>
+        </div>
+        <div id="personDetail" class="hidden animate-in slide-in-from-right duration-300"></div>
+    </main>
+
+    <main id="settingsView" class="px-6 mt-10 hidden max-w-md mx-auto">
+        <h3 class="font-bold text-xl mb-6">Ajustes</h3>
+        <div class="space-y-3">
+            <button onclick="exportData()" class="w-full bg-white dark:bg-slate-900 p-5 rounded-[28px] flex items-center justify-between border border-slate-100 dark:border-slate-800 active:scale-[0.98] transition-all">
+                <div class="flex items-center gap-4"><i data-lucide="file-json" class="text-slate-400"></i><span class="font-bold text-sm">Copia de Seguridad</span></div>
+                <i data-lucide="chevron-right" size="18" class="text-slate-300"></i>
+            </button>
+            <button onclick="importData()" class="w-full bg-white dark:bg-slate-900 p-5 rounded-[28px] flex items-center justify-between border border-slate-100 dark:border-slate-800 active:scale-[0.98] transition-all">
+                <div class="flex items-center gap-4 text-indigo-500"><i data-lucide="upload"></i><span class="font-bold text-sm">Importar Datos</span></div>
+                <i data-lucide="chevron-right" size="18" class="text-slate-300"></i>
+            </button>
+            <div class="mt-8 p-6 bg-rose-50 dark:bg-rose-900/10 rounded-[32px] border border-rose-100 dark:border-rose-900/20">
+                <p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-4">Zona Peligrosa</p>
+                <button onclick="clearAllData()" class="w-full py-3 text-xs font-bold text-rose-600 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-rose-100 dark:border-rose-800">Borrar Todo el Historial</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- NAV BAR -->
+    <nav class="fixed bottom-6 left-6 right-6 glass-nav rounded-[32px] p-4 shadow-2xl flex justify-between items-center z-40 border border-white/5 safe-pb max-w-md mx-auto">
+        <button onclick="switchTab('home')" class="nav-btn flex-1 flex flex-col items-center gap-1 text-indigo-400" id="nav-home">
+            <i data-lucide="layout-grid" size="22"></i>
+            <span class="text-[9px] font-bold uppercase tracking-tighter">Cartera</span>
+        </button>
+        <button onclick="switchTab('debts')" class="nav-btn flex-1 flex flex-col items-center gap-1 text-slate-500" id="nav-debts">
+            <i data-lucide="hand-coins" size="22"></i>
+            <span class="text-[9px] font-bold uppercase tracking-tighter">Deudas</span>
+        </button>
+        <button onclick="switchTab('settings')" class="nav-btn flex-1 flex flex-col items-center gap-1 text-slate-500" id="nav-settings">
+            <i data-lucide="user-cog" size="22"></i>
+            <span class="text-[9px] font-bold uppercase tracking-tighter">Perfil</span>
+        </button>
+    </nav>
+
+    <!-- MODAL -->
+    <div id="modalOverlay" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-0 sm:p-4 z-50 transition-all">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-t-[40px] sm:rounded-[32px] p-8 shadow-2xl max-h-[92vh] overflow-y-auto no-scrollbar">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="modalTitle" class="text-xl font-black">Nuevo Registro</h3>
+                <button onclick="closeModal()" class="p-2 bg-slate-50 dark:bg-slate-800 rounded-full"><i data-lucide="x" size="20"></i></button>
+            </div>
+
+            <!-- Transaction Form -->
+            <div id="transactionForm" class="modal-content space-y-6">
+                <div class="text-center">
+                    <input type="number" id="modalAmount" inputmode="decimal" placeholder="0.00" class="w-full text-5xl font-black text-center py-6 bg-slate-50 dark:bg-slate-800 rounded-3xl outline-none text-indigo-600">
+                </div>
+                
+                <div class="space-y-3">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-2">¿De qué se trata?</p>
+                    <input type="text" id="modalName" placeholder="Ej: Supermercado, Paga..." class="w-full p-5 bg-slate-50 dark:bg-slate-800 rounded-2xl outline-none font-bold">
+                </div>
+
+                <div class="space-y-3">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-2">Categoría</p>
+                    <div id="categoryGrid" class="grid grid-cols-4 gap-2">
+                        <!-- Dynamic categories -->
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <input type="file" id="photoInput" accept="image/*" class="hidden" onchange="handlePhoto(this)">
+                    <label for="photoInput" class="w-full flex items-center justify-center gap-3 p-4 bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl cursor-pointer">
+                        <i data-lucide="camera" class="text-slate-400"></i>
+                        <span id="photoLabelText" class="font-bold text-slate-500 text-xs">Añadir Ticket</span>
+                        <img id="photoPreview" class="w-10 h-10 rounded-lg object-cover hidden border border-white">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Debt Form -->
+            <div id="debtForm" class="modal-content hidden space-y-4">
+                <div class="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
+                    <button onclick="setDebtType('they_owe_me')" id="btnDebtOweMe" class="flex-1 py-3 rounded-xl font-bold text-[10px] bg-indigo-600 text-white shadow-md">ME DEBEN</button>
+                    <button onclick="setDebtType('i_owe')" id="btnDebtIOwe" class="flex-1 py-3 rounded-xl font-bold text-[10px] text-slate-400">DEBO YO</button>
+                </div>
+                <input type="hidden" id="debtType" value="they_owe_me">
+                <input type="text" id="debtPerson" placeholder="Persona" class="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl font-bold outline-none">
+                <input type="number" id="debtAmount" inputmode="decimal" placeholder="Importe (€)" class="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl font-bold outline-none">
+                <input type="text" id="debtNote" placeholder="¿Por qué?" class="w-full p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl font-bold outline-none">
+            </div>
+
+            <button id="modalConfirmBtn" class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-4 rounded-2xl shadow-xl mt-8 active:scale-95 transition-all">Confirmar Registro</button>
+        </div>
+    </div>
+
+    <!-- VIEWER -->
+    <div id="photoViewer" class="fixed inset-0 bg-black/95 z-[100] hidden flex flex-col p-6 animate-in fade-in duration-300">
+        <div class="flex justify-end"><button onclick="closePhotoViewer()" class="text-white p-4"><i data-lucide="x" size="32"></i></button></div>
+        <div class="flex-1 flex items-center justify-center">
+            <img id="fullPhotoImg" class="max-w-full max-h-full object-contain rounded-2xl">
+        </div>
+    </div>
+
+    <script>
+        // CONFIG
+        const CATS = {
+            expense: [
+                { id: 'comida', label: 'Comida', color: '#fb7185', icon: 'utensils' },
+                { id: 'ocio', label: 'Ocio', color: '#818cf8', icon: 'gamepad-2' },
+                { id: 'transporte', label: 'Bus/Tren', color: '#fbbf24', icon: 'bus' },
+                { id: 'compras', label: 'Compras', color: '#2dd4bf', icon: 'shopping-bag' },
+                { id: 'otros_g', label: 'Otros', color: '#94a3b8', icon: 'more-horizontal' }
+            ],
+            income: [
+                { id: 'paga', label: 'Paga', color: '#34d399', icon: 'wallet' },
+                { id: 'regalo', label: 'Regalo', color: '#f472b6', icon: 'gift' },
+                { id: 'venta', label: 'Venta', color: '#38bdf8', icon: 'tag' },
+                { id: 'otros_i', label: 'Otros', color: '#94a3b8', icon: 'plus' }
+            ]
+        };
+
+        // STORE
+        let state = {
+            transactions: JSON.parse(localStorage.getItem('fm_tx_v2')) || [],
+            debts: JSON.parse(localStorage.getItem('fm_debts_v2')) || [],
+            activeCat: null
+        };
+
+        const save = () => {
+            localStorage.setItem('fm_tx_v2', JSON.stringify(state.transactions));
+            localStorage.setItem('fm_debts_v2', JSON.stringify(state.debts));
+            renderAll();
+        };
+
+        // RENDERING
+        function renderTransactions() {
+            const container = document.getElementById('txContainer');
+            container.innerHTML = '';
+            
+            if (state.transactions.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 opacity-30 font-bold text-sm">Sin movimientos</div>`;
+                return;
+            }
+
+            [...state.transactions].sort((a,b) => b.id - a.id).forEach(tx => {
+                const catData = [...CATS.income, ...CATS.expense].find(c => c.id === tx.category) || CATS.expense[4];
+                const div = document.createElement('div');
+                div.className = "bg-white dark:bg-slate-900 p-4 rounded-[24px] border border-slate-100 dark:border-slate-800 flex justify-between items-center group shadow-sm";
+                div.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 rounded-xl" style="background: ${catData.color}20; color: ${catData.color}">
+                            <i data-lucide="${catData.icon}" size="18"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm text-slate-800 dark:text-white">${tx.name}</p>
+                            <div class="flex items-center gap-2">
+                                <p class="text-[9px] font-bold text-slate-400 uppercase">${tx.date}</p>
+                                <span class="text-[8px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">${catData.label}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        ${tx.photo ? `<button onclick="viewPhoto('${tx.photo}')" class="text-indigo-400 p-1"><i data-lucide="image" size="16"></i></button>` : ''}
+                        <p class="font-black text-sm tabular-nums ${tx.type === 'income' ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-200'}">
+                            ${tx.type === 'income' ? '+' : '-'}${tx.amount.toFixed(2)}€
+                        </p>
+                        <button onclick="deleteTx(${tx.id})" class="text-slate-200 hover:text-rose-500 p-1"><i data-lucide="trash-2" size="14"></i></button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        function renderAll() {
+            const inc = state.transactions.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
+            const exp = state.transactions.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
+            
+            document.getElementById('mainBalance').innerText = (inc - exp).toFixed(2) + "€";
+            document.getElementById('totalIncome').innerText = inc.toFixed(2) + "€";
+            document.getElementById('totalExpense').innerText = exp.toFixed(2) + "€";
+            
+            renderTransactions();
+            renderDebts();
+        }
+
+        function renderDebts() {
+            const container = document.getElementById('debtsContainer');
+            const people = [...new Set(state.debts.map(d => d.person))];
+            container.innerHTML = people.length ? '' : '<div class="text-center py-10 opacity-30 font-bold">Sin deudas</div>';
+            
+            people.forEach(person => {
+                const pDebts = state.debts.filter(d => d.person === person);
+                const net = pDebts.reduce((acc, d) => d.type === 'they_owe_me' ? acc + d.amount : acc - d.amount, 0);
+                
+                const btn = document.createElement('button');
+                btn.className = "w-full p-5 bg-white dark:bg-slate-900 rounded-[24px] border border-slate-100 dark:border-slate-800 flex justify-between items-center text-left shadow-sm active:scale-[0.98] transition-all";
+                btn.onclick = () => showPersonDetail(person);
+                btn.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-lg uppercase">${person.charAt(0)}</div>
+                        <div>
+                            <p class="font-bold text-slate-800 dark:text-white">${person}</p>
+                            <p class="text-[10px] font-bold ${net >= 0 ? 'text-emerald-500' : 'text-rose-500'} uppercase">
+                                ${net >= 0 ? `Te debe ${net.toFixed(2)}€` : `Le debes ${Math.abs(net).toFixed(2)}€`}
+                            </p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="text-slate-300"></i>
+                `;
+                container.appendChild(btn);
+            });
+            lucide.createIcons();
+        }
+
+        // NAVIGATION
+        window.switchTab = (tab) => {
+            document.querySelectorAll('main').forEach(m => m.classList.add('hidden'));
+            document.getElementById(tab + 'View').classList.remove('hidden');
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-indigo-400', 'text-slate-500'));
+            document.getElementById('nav-' + tab).classList.replace('text-slate-500', 'text-indigo-400');
+        };
+
+        // MODALS
+        window.openModal = (type) => {
+            document.getElementById('modalOverlay').classList.remove('hidden');
+            document.querySelectorAll('.modal-content').forEach(m => m.classList.add('hidden'));
+            const title = document.getElementById('modalTitle');
+            const confirmBtn = document.getElementById('modalConfirmBtn');
+
+            if (type === 'income' || type === 'expense') {
+                title.innerText = type === 'income' ? 'Registrar Ingreso' : 'Registrar Gasto';
+                document.getElementById('transactionForm').classList.remove('hidden');
+                
+                // Render category grid
+                const grid = document.getElementById('categoryGrid');
+                grid.innerHTML = '';
+                state.activeCat = CATS[type][0].id;
+                
+                CATS[type].forEach(cat => {
+                    const b = document.createElement('button');
+                    b.className = `flex flex-col items-center gap-1 p-3 rounded-2xl transition-all border-2 ${state.activeCat === cat.id ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-transparent bg-slate-50 dark:bg-slate-800'}`;
+                    b.onclick = () => {
+                        state.activeCat = cat.id;
+                        document.querySelectorAll('#categoryGrid button').forEach(btn => btn.classList.remove('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20'));
+                        btn.classList.add('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20');
+                        b.classList.add('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20'); // redundant but safe
+                        openModal(type); // re-render grid
+                    };
+                    b.innerHTML = `<i data-lucide="${cat.icon}" size="16"></i> <span class="text-[8px] font-bold uppercase">${cat.label}</span>`;
+                    grid.appendChild(b);
+                });
+                lucide.createIcons();
+
+                confirmBtn.onclick = () => {
+                    const amount = parseFloat(document.getElementById('modalAmount').value);
+                    const name = document.getElementById('modalName').value || (type === 'income' ? 'Ingreso' : 'Gasto');
+                    if (!amount) return;
+                    state.transactions.push({
+                        id: Date.now(),
+                        type,
+                        amount,
+                        name,
+                        category: state.activeCat,
+                        date: new Date().toLocaleDateString(),
+                        photo: document.getElementById('photoPreview').src.startsWith('data:') ? document.getElementById('photoPreview').src : null
+                    });
+                    save(); closeModal();
+                };
+            } else if (type === 'debt') {
+                title.innerText = 'Nueva Deuda';
+                document.getElementById('debtForm').classList.remove('hidden');
+                confirmBtn.onclick = () => {
+                    const person = document.getElementById('debtPerson').value;
+                    const amount = parseFloat(document.getElementById('debtAmount').value);
+                    if (!person || !amount) return;
+                    state.debts.push({
+                        id: Date.now(),
+                        person,
+                        amount,
+                        type: document.getElementById('debtType').value,
+                        note: document.getElementById('debtNote').value
+                    });
+                    save(); closeModal();
+                };
+            }
+        };
+
+        window.closeModal = () => {
+            document.getElementById('modalOverlay').classList.add('hidden');
+            document.getElementById('modalAmount').value = '';
+            document.getElementById('modalName').value = '';
+            document.getElementById('photoPreview').src = '';
+            document.getElementById('photoPreview').classList.add('hidden');
+            document.getElementById('photoLabelText').innerText = "Añadir Ticket";
+            document.getElementById('debtPerson').value = '';
+            document.getElementById('debtAmount').value = '';
+            document.getElementById('debtNote').value = '';
+        };
+
+        window.setDebtType = (type) => {
+            document.getElementById('debtType').value = type;
+            document.getElementById('btnDebtOweMe').className = `flex-1 py-3 rounded-xl font-bold text-[10px] ${type === 'they_owe_me' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`;
+            document.getElementById('btnDebtIOwe').className = `flex-1 py-3 rounded-xl font-bold text-[10px] ${type === 'i_owe' ? 'bg-rose-600 text-white shadow-md' : 'text-slate-400'}`;
+        };
+
+        window.handlePhoto = (input) => {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('photoPreview').src = e.target.result;
+                    document.getElementById('photoPreview').classList.remove('hidden');
+                    document.getElementById('photoLabelText').innerText = "Cargado";
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.viewPhoto = (src) => {
+            document.getElementById('fullPhotoImg').src = src;
+            document.getElementById('photoViewer').classList.remove('hidden');
+        };
+
+        window.closePhotoViewer = () => document.getElementById('photoViewer').classList.add('hidden');
+
+        window.deleteTx = (id) => { if(confirm('¿Borrar movimiento?')) { state.transactions = state.transactions.filter(t => t.id !== id); save(); } };
+        
+        window.clearAllData = () => { if(confirm('¡CUIDADO! Se borrará todo para siempre. ¿Continuar?')) { localStorage.clear(); location.reload(); } };
+
+        window.exportData = () => {
+            const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `FinancialManagement_Backup.json`; a.click();
+        };
+
+        window.importData = () => {
+            const i = document.createElement('input'); i.type = 'file'; i.accept = '.json';
+            i.onchange = e => {
+                const r = new FileReader();
+                r.onload = f => { state = JSON.parse(f.target.result); save(); location.reload(); };
+                r.readAsText(e.target.files[0]);
+            };
+            i.click();
+        };
+
+        function showPersonDetail(person) {
+            const detail = document.getElementById('personDetail');
+            const list = document.getElementById('debtsList');
+            const pDebts = state.debts.filter(d => d.person === person);
+            const net = pDebts.reduce((acc, d) => d.type === 'they_owe_me' ? acc + d.amount : acc - d.amount, 0);
+
+            list.classList.add('hidden');
+            detail.classList.remove('hidden');
+
+            detail.innerHTML = `
+                <div class="flex items-center gap-4 mb-8">
+                    <button onclick="hidePersonDetail()" class="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm"><i data-lucide="arrow-left"></i></button>
+                    <h4 class="text-xl font-bold">${person}</h4>
+                </div>
+                <div class="p-10 rounded-[40px] text-center text-white mb-8 ${net >= 0 ? 'bg-indigo-600' : 'bg-rose-600'}">
+                    <p class="text-[10px] font-bold opacity-60 uppercase mb-2">Balance Neto</p>
+                    <p class="text-4xl font-black">${net.toFixed(2)}€</p>
+                </div>
+                <div class="space-y-3">
+                    ${pDebts.map(d => `
+                        <div class="p-4 bg-white dark:bg-slate-900 rounded-2xl flex justify-between items-center border border-slate-100 dark:border-slate-800">
+                            <div>
+                                <p class="text-xs font-bold">${d.note || 'Deuda'}</p>
+                                <p class="text-[8px] text-slate-400 font-bold uppercase">ID: ${d.id}</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="font-bold text-sm ${d.type === 'they_owe_me' ? 'text-emerald-500' : 'text-rose-500'}">
+                                    ${d.type === 'they_owe_me' ? '+' : '-'}${d.amount.toFixed(2)}€
+                                </span>
+                                <button onclick="deleteDebt(${d.id})" class="text-slate-200"><i data-lucide="trash-2" size="14"></i></button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        window.hidePersonDetail = () => {
+            document.getElementById('personDetail').classList.add('hidden');
+            document.getElementById('debtsList').classList.remove('hidden');
+        };
+
+        window.deleteDebt = (id) => {
+            const person = state.debts.find(d => d.id === id).person;
+            state.debts = state.debts.filter(d => d.id !== id);
+            save();
+            if (state.debts.filter(d => d.person === person).length === 0) hidePersonDetail();
+            else showPersonDetail(person);
+        };
+
+        // INIT
+        renderAll();
+        lucide.createIcons();
+    </script>
+</body>
+</html>
